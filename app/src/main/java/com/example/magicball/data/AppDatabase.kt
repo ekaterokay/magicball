@@ -6,7 +6,7 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 
 @Database(
-    entities = [CustomAnswerEntity::class],
+    entities = [CustomAnswersDb::class],
     version = 1,
     exportSchema = false
 )

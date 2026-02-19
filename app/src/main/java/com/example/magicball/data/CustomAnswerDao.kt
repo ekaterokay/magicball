@@ -5,17 +5,16 @@ import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
-import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface CustomAnswerDao {
 
     @Query("SELECT * FROM custom_answers ORDER BY id DESC")
-    fun getAll(): Flow<List<CustomAnswerEntity>>
+    suspend fun getAll(): List<CustomAnswersDb>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insert(item: CustomAnswerEntity)
+    suspend fun insert(item: CustomAnswersDb)
 
     @Delete
-    suspend fun delete(item: CustomAnswerEntity)
+    suspend fun delete(item: CustomAnswersDb)
 }

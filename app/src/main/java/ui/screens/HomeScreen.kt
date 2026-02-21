@@ -1,15 +1,19 @@
 package ui.screens
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Button
+import androidx.compose.foundation.layout.*
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.example.magicball.ui.MagicBackground
+import com.example.magicball.ui.MagicBallHero
+import com.example.magicball.ui.PrimaryButton
+import com.example.magicball.ui.SecondaryButton
+import com.example.magicball.ui.theme.TextSecondary
 
 @Composable
 fun HomeScreen(
@@ -17,26 +21,40 @@ fun HomeScreen(
     onOpenCustom: () -> Unit,
     onOpenDaily: () -> Unit,
 ) {
-    ScreenScaffold(
-        title = "Magic Ball",
-        onBack = null,
-        onOpenHistory = null
-    ) { padding ->
+    MagicBackground {
+
+        Spacer(modifier = Modifier.height(20.dp))
+
+        // 🔮 Шар + заголовок
+        MagicBallHero(
+            title = "Шар предсказаний",
+            subtitle = "Спроси и узнай свою судьбу!"
+        )
+
+        Spacer(modifier = Modifier.height(40.dp))
+
+        // Текст выбора режима
+        Text(
+            text = "Выбери режим:",
+            fontSize = 18.sp,
+            fontWeight = FontWeight.Medium,
+            color = TextSecondary
+        )
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        // КНОПКИ ПО ЦЕНТРУ
         Column(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+                .fillMaxWidth(0.9f),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Text(
-                text = "Выбери режим 🔮",
-                style = MaterialTheme.typography.titleLarge
-            )
-
-            Button(onClick = onOpenClassic) { Text("Классический") }
-            Button(onClick = onOpenCustom) { Text("Свои варианты") }
-            Button(onClick = onOpenDaily) { Text("Совет на день") }
+            PrimaryButton(text = "Классический", onClick = onOpenClassic)
+            PrimaryButton(text = "Свои варианты", onClick = onOpenCustom)
+            SecondaryButton(text = "Совет на день", onClick = onOpenDaily)
         }
+
+        Spacer(modifier = Modifier.weight(1f))
     }
 }

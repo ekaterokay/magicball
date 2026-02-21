@@ -8,6 +8,7 @@ import ui.screens.CustomScreen
 import ui.screens.DailyAdviceScreen
 import ui.screens.HistoryScreen
 import ui.screens.HomeScreen
+import ui.screens.ScreenScaffold
 
 enum class Mode { CLASSIC, CUSTOM, DAILY }
 
@@ -18,38 +19,87 @@ sealed class Screen {
 }
 
 @Composable
-fun AppRoot() {
+fun AppRoot(
+    onExitApp: () -> Unit
+) {
     val screenState = remember { mutableStateOf<Screen>(Screen.Home) }
+    val currentModeState = remember { mutableStateOf(Mode.CLASSIC) }
 
+    fun openMode(mode: Mode) {
+        currentModeState.value = mode
+        screenState.value = Screen.ModeScreen(mode)
+    }
+
+    fun openHistoryForCurrentMode() {
+        screenState.value = Screen.History(currentModeState.value)
+    }
+
+    fun goBack() {
+        screenState.value = when (val s = screenState.value) {
+            Screen.Home -> Screen.Home
+            is Screen.ModeScreen -> Screen.Home
+            is Screen.History -> Screen.ModeScreen(s.mode)
+        }
+    }
+
+    // синхронизируем текущий режим
     when (val s = screenState.value) {
-        Screen.Home -> HomeScreen(
-            onOpenClassic = { screenState.value = Screen.ModeScreen(Mode.CLASSIC) },
-            onOpenCustom = { screenState.value = Screen.ModeScreen(Mode.CUSTOM) },
-            onOpenDaily = { screenState.value = Screen.ModeScreen(Mode.DAILY) },
-        )
+        is Screen.ModeScreen -> currentModeState.value = s.mode
+        is Screen.History -> currentModeState.value = s.mode
+        Screen.Home -> Unit
+    }
 
-        is Screen.ModeScreen -> {
-            when (s.mode) {
+    val title = when (val s = screenState.value) {
+        Screen.Home -> "MagicBall"
+        is Screen.ModeScreen -> when (s.mode) {
+            Mode.CLASSIC -> "Классический"
+            Mode.CUSTOM -> "Свои варианты"
+            Mode.DAILY -> "Совет на день"
+        }
+        is Screen.History -> "История"
+    }
+
+    val isHome = screenState.value is Screen.Home
+
+    ScreenScaffold(
+        title = title,
+        showBack = !isHome,
+        onBack = { goBack() },
+        onOpenHistory = if (!isHome && screenState.value !is Screen.History)
+            ({ openHistoryForCurrentMode() })
+        else null,
+        onExit = if (isHome) onExitApp else null
+    ) { _ ->
+
+        when (val s = screenState.value) {
+
+            Screen.Home -> HomeScreen(
+                onOpenClassic = { openMode(Mode.CLASSIC) },
+                onOpenCustom = { openMode(Mode.CUSTOM) },
+                onOpenDaily = { openMode(Mode.DAILY) }
+            )
+
+            is Screen.ModeScreen -> when (s.mode) {
                 Mode.CLASSIC -> ClassicScreen(
-                    onBack = { screenState.value = Screen.Home },
-                    onOpenHistory = { screenState.value = Screen.History(Mode.CLASSIC) }
+                    onBack = { goBack() },
+                    onOpenHistory = { openHistoryForCurrentMode() }
                 )
 
                 Mode.CUSTOM -> CustomScreen(
-                    onBack = { screenState.value = Screen.Home },
-                    onOpenHistory = { screenState.value = Screen.History(Mode.CUSTOM) }
+                    onBack = { goBack() },
+                    onOpenHistory = { openHistoryForCurrentMode() }
                 )
 
                 Mode.DAILY -> DailyAdviceScreen(
-                    onBack = { screenState.value = Screen.Home },
-                    onOpenHistory = { screenState.value = Screen.History(Mode.DAILY) }
+                    onBack = { goBack() },
+                    onOpenHistory = { openHistoryForCurrentMode() }
                 )
             }
-        }
 
-        is Screen.History -> HistoryScreen(
-            mode = s.mode,
-            onBack = { screenState.value = Screen.ModeScreen(s.mode) }
-        )
+            is Screen.History -> HistoryScreen(
+                mode = s.mode,
+                onBack = { screenState.value = Screen.ModeScreen(s.mode) }
+            )
+        }
     }
 }

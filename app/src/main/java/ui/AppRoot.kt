@@ -96,6 +96,7 @@ fun AppRoot(
                 )
             }
 
+
             is Screen.History -> HistoryScreen(
                 mode = s.mode,
                 onBack = { screenState.value = Screen.ModeScreen(s.mode) }

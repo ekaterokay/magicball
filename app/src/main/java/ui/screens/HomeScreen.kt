@@ -56,6 +56,7 @@ fun HomeScreen(
             SecondaryButton(text = "Совет на день", onClick = onOpenDaily)
         }
 
+
         Spacer(modifier = Modifier.weight(1f))
     }
 }

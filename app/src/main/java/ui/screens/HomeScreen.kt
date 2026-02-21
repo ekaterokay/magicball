@@ -41,6 +41,7 @@ fun HomeScreen(
             color = TextSecondary
         )
 
+
         Spacer(modifier = Modifier.height(24.dp))
 
         // КНОПКИ ПО ЦЕНТРУ

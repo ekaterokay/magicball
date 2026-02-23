@@ -12,6 +12,7 @@ import ui.screens.ScreenScaffold
 
 enum class Mode { CLASSIC, CUSTOM, DAILY }
 
+
 sealed class Screen {
     data object Home : Screen()
     data class ModeScreen(val mode: Mode) : Screen()

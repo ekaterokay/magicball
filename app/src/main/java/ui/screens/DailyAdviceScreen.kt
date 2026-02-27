@@ -4,62 +4,36 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import com.example.magicball.data.AdviceService
-import com.example.magicball.data.HistoryStore
 import com.example.magicball.ui.MagicBackground
 import com.example.magicball.ui.MagicBallHero
 import com.example.magicball.ui.PrimaryButton
 import com.example.magicball.ui.theme.*
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-import ui.Mode
 
 @Composable
 fun DailyAdviceScreen(
     onBack: () -> Unit,
-    onOpenHistory: () -> Unit
+    onOpenHistory: () -> Unit,
+    advice: String?,
+    loading: Boolean,
+    error: String?,
+    onEnsureLoaded: () -> Unit,
+    onReload: () -> Unit
 ) {
-    // onBack и onOpenHistory обрабатываются общим ScreenScaffold в AppRoot
-
-    var loading by remember { mutableStateOf(false) }
-    var error by remember { mutableStateOf<String?>(null) }
-    var advice by remember { mutableStateOf<String?>(null) }
-
-    var reloadKey by remember { mutableIntStateOf(0) }
-    var lastSaved by remember { mutableStateOf<String?>(null) }
-
-    suspend fun loadAdvice() {
-        loading = true
-        error = null
-        try {
-            val res = withContext(Dispatchers.IO) { AdviceService.api.getQuote() }
-            val text = res.quoteText?.trim().orEmpty()
-            val finalText = if (text.isNotEmpty()) text else "Не удалось получить совет 😅"
-            advice = finalText
-
-            // сохраняем в историю только реальный совет и только если он новый
-            if (text.isNotEmpty() && text != lastSaved) {
-                HistoryStore.add(Mode.DAILY, text)
-                lastSaved = text
-            }
-        } catch (t: Throwable) {
-            error = t.message ?: "Ошибка сети"
-        } finally {
-            loading = false
-        }
+    // ✅ загружаем только если совета ещё нет (AppRoot решает, надо ли)
+    LaunchedEffect(Unit) {
+        onEnsureLoaded()
     }
-
-    LaunchedEffect(reloadKey) { loadAdvice() }
 
     MagicBackground(contentPadding = PaddingValues(16.dp)) {
 
-        Spacer(Modifier.height(12.dp)) // отступ от общего topBar
+        Spacer(Modifier.height(12.dp))
 
         MagicBallHero(size = 170.dp)
 
@@ -118,7 +92,9 @@ fun DailyAdviceScreen(
             PrimaryButton(
                 text = if (loading) "Загружаю..." else "Другой совет",
                 enabled = !loading
-            ) { reloadKey++ }
+            ) {
+                onReload()
+            }
         }
 
         Spacer(Modifier.weight(1f))

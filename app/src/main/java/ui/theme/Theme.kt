@@ -1,8 +1,11 @@
 package com.example.magicball.ui.theme
 
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 
 private val DarkColors = darkColorScheme(
@@ -50,7 +53,14 @@ private val DarkColors = darkColorScheme(
 fun MagicBallTheme(content: @Composable () -> Unit) {
     MaterialTheme(
         colorScheme = DarkColors,
-        typography = Typography,
-        content = content
-    )
+        typography = Typography
+    ) {
+        // ✅ ГЛАВНОЕ: закрашиваем фон всегда, чтобы не было белого
+        Surface(
+            modifier = Modifier.fillMaxSize(),
+            color = MaterialTheme.colorScheme.background
+        ) {
+            content()
+        }
+    }
 }

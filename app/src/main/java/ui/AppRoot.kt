@@ -3,6 +3,12 @@ package ui
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import com.example.magicball.data.AdviceService
+import com.example.magicball.data.HistoryStore
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import ui.screens.ClassicScreen
 import ui.screens.CustomScreen
 import ui.screens.DailyAdviceScreen
@@ -11,8 +17,6 @@ import ui.screens.HomeScreen
 import ui.screens.ScreenScaffold
 
 enum class Mode { CLASSIC, CUSTOM, DAILY }
-
-
 
 sealed class Screen {
     data object Home : Screen()
@@ -26,6 +30,13 @@ fun AppRoot(
 ) {
     val screenState = remember { mutableStateOf<Screen>(Screen.Home) }
     val currentModeState = remember { mutableStateOf(Mode.CLASSIC) }
+
+    val scope = rememberCoroutineScope()
+
+    // ✅ берём сохранённый совет из SharedPreferences (переживает перезапуск)
+    val dailyAdvice = remember { mutableStateOf(HistoryStore.getCurrentDailyAdvice()) }
+    val dailyLoading = remember { mutableStateOf(false) }
+    val dailyError = remember { mutableStateOf<String?>(null) }
 
     fun openMode(mode: Mode) {
         currentModeState.value = mode
@@ -44,11 +55,41 @@ fun AppRoot(
         }
     }
 
-    // синхронизируем текущий режим
+    // держим текущий режим актуальным
     when (val s = screenState.value) {
         is Screen.ModeScreen -> currentModeState.value = s.mode
         is Screen.History -> currentModeState.value = s.mode
         Screen.Home -> Unit
+    }
+
+    fun loadDailyAdvice(force: Boolean) {
+        // ✅ если совет уже есть, не меняем его (только по кнопке)
+        if (!force && dailyAdvice.value != null) return
+
+        scope.launch {
+            dailyLoading.value = true
+            dailyError.value = null
+            try {
+                val res = withContext(Dispatchers.IO) { AdviceService.api.getQuote() }
+                val text = res.quoteText?.trim().orEmpty()
+                val finalText = if (text.isNotEmpty()) text else "Не удалось получить совет 😅"
+
+                val prev = HistoryStore.getCurrentDailyAdvice()
+
+                // ✅ сохраняем текущий совет (переживает перезапуск)
+                dailyAdvice.value = finalText
+                HistoryStore.setCurrentDailyAdvice(finalText)
+
+                // ✅ в историю пишем только реальный текст и только если он отличается
+                if (text.isNotEmpty() && text != prev) {
+                    HistoryStore.add(Mode.DAILY, text)
+                }
+            } catch (t: Throwable) {
+                dailyError.value = t.message ?: "Ошибка сети"
+            } finally {
+                dailyLoading.value = false
+            }
+        }
     }
 
     val title = when (val s = screenState.value) {
@@ -82,6 +123,7 @@ fun AppRoot(
             )
 
             is Screen.ModeScreen -> when (s.mode) {
+
                 Mode.CLASSIC -> ClassicScreen(
                     onBack = { goBack() },
                     onOpenHistory = { openHistoryForCurrentMode() }
@@ -94,7 +136,12 @@ fun AppRoot(
 
                 Mode.DAILY -> DailyAdviceScreen(
                     onBack = { goBack() },
-                    onOpenHistory = { openHistoryForCurrentMode() }
+                    onOpenHistory = { openHistoryForCurrentMode() },
+                    advice = dailyAdvice.value,
+                    loading = dailyLoading.value,
+                    error = dailyError.value,
+                    onEnsureLoaded = { loadDailyAdvice(force = false) },
+                    onReload = { loadDailyAdvice(force = true) }
                 )
             }
 

@@ -16,6 +16,7 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.material3.MaterialTheme
 import com.example.magicball.ui.MagicBackground
 import com.example.magicball.ui.theme.AccentNeon
 import com.example.magicball.ui.theme.TextPrimary
@@ -32,12 +33,14 @@ fun ScreenScaffold(
 ) {
     Scaffold(
         modifier = Modifier.fillMaxSize(),
-        containerColor = Color.Transparent,
+
+        // ✅ ВАЖНО: не Transparent!
+        containerColor = MaterialTheme.colorScheme.background,
+
         topBar = {
             CenterAlignedTopAppBar(
                 title = { Text(title, color = TextPrimary) },
 
-                // слева: Exit на Home, иначе Back
                 navigationIcon = {
                     when {
                         onExit != null -> {
@@ -61,7 +64,6 @@ fun ScreenScaffold(
                     }
                 },
 
-                // справа: History (если нужно)
                 actions = {
                     if (onOpenHistory != null) {
                         IconButton(onClick = onOpenHistory) {

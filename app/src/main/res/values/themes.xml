@@ -1,5 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <style name="Theme.MagicBall" parent="android:Theme.Material.Light.NoActionBar" />
+    <!-- Тема экрана запуска для Android < 12 (там можно drawable/градиент) -->
+    <style name="Theme.MagicBall.Splash" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@drawable/splash_gradient</item>
+    </style>
+
+    <!-- Основная тема приложения -->
+    <style name="Theme.MagicBall" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">#0C0F1C</item>
+        <item name="android:colorBackground">#0C0F1C</item>
+    </style>
+
 </resources>

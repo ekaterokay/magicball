@@ -6,7 +6,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -15,6 +15,7 @@ import androidx.compose.ui.unit.dp
 import com.example.magicball.data.HistoryStore
 import com.example.magicball.ui.MagicBackground
 import com.example.magicball.ui.MagicBallHero
+import com.example.magicball.ui.SecondaryButton
 import com.example.magicball.ui.theme.*
 import ui.Mode
 
@@ -23,7 +24,9 @@ fun HistoryScreen(
     mode: Mode,
     onBack: () -> Unit
 ) {
-    val items = HistoryStore.get(mode).asReversed()
+    // чтобы обновлять UI после очистки
+    var refreshKey by remember { mutableIntStateOf(0) }
+    val items = remember(refreshKey, mode) { HistoryStore.get(mode).asReversed() } // новые сверху
 
     MagicBackground(contentPadding = PaddingValues(16.dp)) {
 
@@ -68,7 +71,7 @@ fun HistoryScreen(
                     )
                     Spacer(Modifier.height(6.dp))
                     Text(
-                        text = "Сделай пару предсказаний - и они появятся здесь ✨",
+                        text = "Сделай пару предсказаний — и они появятся здесь ✨",
                         color = TextSecondary,
                         style = MaterialTheme.typography.bodyMedium,
                         textAlign = TextAlign.Center,
@@ -76,10 +79,13 @@ fun HistoryScreen(
                     )
                 }
             }
+
+            Spacer(Modifier.weight(1f))
         } else {
+            // список занимает доступное место
             LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(top = 4.dp, bottom = 24.dp),
+                modifier = Modifier.weight(1f),
+                contentPadding = PaddingValues(top = 4.dp, bottom = 12.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 itemsIndexed(items) { index, item ->
@@ -95,7 +101,7 @@ fun HistoryScreen(
                                 .padding(16.dp)
                         ) {
                             Text(
-                                text = "№ ${items.size - index}",
+                                text = "№ ${items.size - index}", // от большего к меньшему
                                 color = TextSecondary,
                                 style = MaterialTheme.typography.labelLarge
                             )
@@ -110,6 +116,14 @@ fun HistoryScreen(
                     }
                 }
             }
+
+            // кнопка внизу
+            SecondaryButton(text = "Очистить историю") {
+                HistoryStore.clear(mode)
+                refreshKey++
+            }
+
+            Spacer(Modifier.height(8.dp))
         }
     }
 }

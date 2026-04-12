@@ -15,6 +15,7 @@ import com.example.magicball.ui.MagicBallHero
 import com.example.magicball.ui.PrimaryButton
 import com.example.magicball.ui.SecondaryButton
 import com.example.magicball.ui.theme.*
+import kotlinx.coroutines.delay
 import ui.Mode
 
 @Composable
@@ -24,13 +25,41 @@ fun CustomScreen(
 ) {
     var variantsText by remember { mutableStateOf("Да\nНет\nВозможно") }
     var answer by remember { mutableStateOf("Введи варианты и нажми кнопку") }
+    var isShaking by remember { mutableStateOf(false) }
+    var dotsCount by remember { mutableStateOf(3) }
+    var generatedAnswer by remember { mutableStateOf("") }
+    var askedOnce by remember { mutableStateOf(false) }
+
     val isHint = answer == "Введи варианты и нажми кнопку"
+    val isGenerating = isShaking
+
+    // Логика циклического уменьшения точек
+    LaunchedEffect(isGenerating) {
+        if (isGenerating) {
+            while (isGenerating) {
+                for (dots in 3 downTo 1) {
+                    dotsCount = dots
+                    delay(300)
+                }
+            }
+        }
+    }
+
+    // Логика выдачи ответа через 1 секунду
+    LaunchedEffect(isShaking) {
+        if (isShaking) {
+            delay(1000)
+            answer = generatedAnswer
+            isShaking = false
+            dotsCount = 3
+        }
+    }
 
     MagicBackground(contentPadding = PaddingValues(16.dp)) {
 
         Spacer(Modifier.height(12.dp))
 
-        MagicBallHero(size = 150.dp)
+        MagicBallHero(size = 150.dp, isShaking = isShaking)
 
         Spacer(Modifier.height(14.dp))
 
@@ -47,7 +76,6 @@ fun CustomScreen(
                     .fillMaxWidth()
                     .padding(16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                // ✅ чуть меньше общий gap, чтобы кнопки были ближе к полю
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 Text(
@@ -62,12 +90,10 @@ fun CustomScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .heightIn(min = 120.dp),
-                    // ✅ фиксируем одинаковый размер текста и для ввода, и для подсказки
                     textStyle = MaterialTheme.typography.bodyLarge,
                     placeholder = {
                         Text(
                             text = "Да\nНет\nВозможно",
-                            // ✅ при очистке не “прыгает”: размер тот же, меняется только прозрачность
                             color = TextPrimary.copy(alpha = 0.35f),
                             style = MaterialTheme.typography.bodyLarge
                         )
@@ -88,28 +114,40 @@ fun CustomScreen(
                     )
                 )
 
-                // ✅ кнопки ближе к полю (убрали лишние “воздухи”)
                 Column(
                     modifier = Modifier.fillMaxWidth(0.92f),
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    PrimaryButton(text = "Выбрать случайно") {
+                    PrimaryButton(text = "Выбрать случайно", enabled = !isShaking) {
                         val list = variantsText
                             .lines()
                             .map { it.trim() }
                             .filter { it.isNotEmpty() }
 
-                        val newAnswer =
-                            if (list.isEmpty()) "Добавь хотя бы один вариант" else list.random()
-
-                        answer = newAnswer
-                        if (list.isNotEmpty()) HistoryStore.add(Mode.CUSTOM, newAnswer)
+                        when {
+                            list.isEmpty() -> {
+                                answer = "Добавь хотя бы два варианта"
+                            }
+                            list.size < 2 -> {
+                                answer = "Нужно минимум два варианта"
+                            }
+                            else -> {
+                                generatedAnswer = list.random()
+                                askedOnce = true
+                                isShaking = true
+                                dotsCount = 3
+                                HistoryStore.add(Mode.CUSTOM, generatedAnswer)
+                            }
+                        }
                     }
+
 
                     SecondaryButton(text = "Очистить") {
                         variantsText = ""
                         answer = "Введи варианты и нажми кнопку"
+                        askedOnce = false
+                        isShaking = false
                     }
                 }
             }
@@ -137,12 +175,27 @@ fun CustomScreen(
                     style = MaterialTheme.typography.labelLarge
                 )
                 Spacer(Modifier.height(10.dp))
-                Text(
-                    text = answer,
-                    color = if (isHint) TextTertiary.copy(alpha = 0.55f) else TextPrimary,
-                    style = if (isHint) MaterialTheme.typography.bodyMedium else MaterialTheme.typography.titleLarge,
-                    fontWeight = if (isHint) FontWeight.Normal else FontWeight.SemiBold
-                )
+
+                Box(
+                    modifier = Modifier.fillMaxWidth(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    if (isGenerating) {
+                        Text(
+                            text = "Генерация ответа" + ".".repeat(dotsCount),
+                            color = TextTertiary.copy(alpha = 0.55f),
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = FontWeight.Medium
+                        )
+                    } else {
+                        Text(
+                            text = answer,
+                            color = if (isHint) TextTertiary.copy(alpha = 0.55f) else TextPrimary,
+                            style = if (isHint) MaterialTheme.typography.bodyMedium else MaterialTheme.typography.titleLarge,
+                            fontWeight = if (isHint) FontWeight.Normal else FontWeight.SemiBold
+                        )
+                    }
+                }
             }
         }
 

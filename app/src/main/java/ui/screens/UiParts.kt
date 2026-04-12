@@ -1,5 +1,16 @@
 package com.example.magicball.ui
 
+
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.foundation.layout.offset
+
+
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -74,17 +85,49 @@ fun MagicBallHero(
     modifier: Modifier = Modifier,
     size: Dp = 220.dp,
     title: String? = null,
-    subtitle: String? = null
+    subtitle: String? = null,
+    isShaking: Boolean = false
 ) {
+    val offsetX = remember { Animatable(0f) }
+    val isAnimating = remember { mutableStateOf(false) }
+
+    LaunchedEffect(isShaking) {
+        if (isShaking) {
+            isAnimating.value = true
+            val shakeDuration = 1000 // 1 секунда
+            val shakeIntensity = 12f // пиксели
+            val shakeCount = 10 // количество колебаний
+
+            repeat(shakeCount) {
+                // Влево
+                offsetX.animateTo(
+                    -shakeIntensity,
+                    animationSpec = tween(shakeDuration / (shakeCount * 2), easing = LinearEasing)
+                )
+                // Вправо
+                offsetX.animateTo(
+                    shakeIntensity,
+                    animationSpec = tween(shakeDuration / (shakeCount * 2), easing = LinearEasing)
+                )
+            }
+            // Возврат на исходное положение с плавной анимацией
+            offsetX.animateTo(0f, animationSpec = tween(300))
+            isAnimating.value = false
+        } else {
+            // Если isShaking стал false, сразу сбрасываем позицию
+            offsetX.snapTo(0f)
+            isAnimating.value = false
+        }
+    }
+
     Column(
-        modifier = modifier,
+        modifier = modifier.offset(x = offsetX.value.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Box(
             modifier = Modifier
                 .size(size)
                 .drawBehind {
-                    // outer glow rings (NO unresolved refs)
                     this.drawCircle(
                         color = Color(0x33B388FF),
                         radius = size.toPx() * 0.62f
@@ -97,7 +140,6 @@ fun MagicBallHero(
                 .clip(CircleShape)
                 .background(GradBall)
         ) {
-            // inner highlight
             Box(
                 modifier = Modifier
                     .size(size * 0.62f)
@@ -134,6 +176,7 @@ fun MagicBallHero(
         }
     }
 }
+
 
 // ---------- Premium Buttons ----------
 @Composable

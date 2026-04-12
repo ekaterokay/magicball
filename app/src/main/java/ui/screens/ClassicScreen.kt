@@ -1,4 +1,4 @@
-package ui.screens
+package com.example.magicball.ui.screens
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
@@ -15,26 +15,51 @@ import com.example.magicball.ui.MagicBackground
 import com.example.magicball.ui.MagicBallHero
 import com.example.magicball.ui.PrimaryButton
 import com.example.magicball.ui.theme.*
+import kotlinx.coroutines.delay
 import ui.Mode
 
 @Composable
 fun ClassicScreen(
-    onBack: () -> Unit,
-    onOpenHistory: () -> Unit
+    @Suppress("UNUSED_PARAMETER") onBack: () -> Unit,
+    @Suppress("UNUSED_PARAMETER") onOpenHistory: () -> Unit
 ) {
-    // onBack и onOpenHistory теперь обрабатываются в AppRoot через ScreenScaffold
-
     val initialHint = "Нажми кнопку и получишь ответ"
     var answer by remember { mutableStateOf(initialHint) }
     var askedOnce by remember { mutableStateOf(false) }
+    var isShaking by remember { mutableStateOf(false) }
+    var dotsCount by remember { mutableStateOf(3) }
+    var generatedAnswer by remember { mutableStateOf("") }
 
     val isHint = !askedOnce && answer == initialHint
+    val isGenerating = isShaking
+
+    // Логика циклического уменьшения точек
+    LaunchedEffect(isGenerating) {
+        if (isGenerating) {
+            while (isGenerating) {
+                for (dots in 3 downTo 1) {
+                    dotsCount = dots
+                    delay(300) // время между изменением точек
+                }
+            }
+        }
+    }
+
+    // Логика выдачи ответа через 1 секунду
+    LaunchedEffect(isShaking) {
+        if (isShaking) {
+            delay(1000) // ждем 1 секунду (время тряски)
+            answer = generatedAnswer
+            isShaking = false
+            dotsCount = 3
+        }
+    }
 
     MagicBackground(contentPadding = PaddingValues(16.dp)) {
 
         Spacer(Modifier.height(12.dp))
 
-        MagicBallHero(size = 180.dp)
+        MagicBallHero(size = 180.dp, isShaking = isShaking)
 
         Spacer(Modifier.height(16.dp))
 
@@ -66,19 +91,31 @@ fun ClassicScreen(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(
-                        text = answer,
-                        textAlign = TextAlign.Center,
-                        color = if (isHint) TextTertiary.copy(alpha = 0.55f) else TextPrimary,
-                        style = if (isHint)
-                            MaterialTheme.typography.bodyLarge
-                        else
-                            MaterialTheme.typography.titleLarge,
-                        fontWeight = if (isHint)
-                            FontWeight.Medium
-                        else
-                            FontWeight.SemiBold
-                    )
+                    if (isGenerating) {
+                        // Показываем "Генерация ответа..." с циклическими точками
+                        Text(
+                            text = "Генерация ответа" + ".".repeat(dotsCount),
+                            textAlign = TextAlign.Center,
+                            color = TextTertiary.copy(alpha = 0.55f),
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = FontWeight.Medium
+                        )
+                    } else {
+                        // Показываем реальный ответ или hint
+                        Text(
+                            text = answer,
+                            textAlign = TextAlign.Center,
+                            color = if (isHint) TextTertiary.copy(alpha = 0.55f) else TextPrimary,
+                            style = if (isHint)
+                                MaterialTheme.typography.bodyLarge
+                            else
+                                MaterialTheme.typography.titleLarge,
+                            fontWeight = if (isHint)
+                                FontWeight.Medium
+                            else
+                                FontWeight.SemiBold
+                        )
+                    }
                 }
             }
         }
@@ -90,12 +127,14 @@ fun ClassicScreen(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             PrimaryButton(
-                text = if (askedOnce) "Спросить снова" else "Спросить шар"
+                text = if (askedOnce) "Спросить снова" else "Спросить шар",
+                enabled = !isShaking
             ) {
-                val newAnswer = HistoryStore.randomClassic()
-                answer = newAnswer
+                generatedAnswer = HistoryStore.randomClassic()
                 askedOnce = true
-                HistoryStore.add(Mode.CLASSIC, newAnswer)
+                isShaking = true
+                dotsCount = 3
+                HistoryStore.add(Mode.CLASSIC, generatedAnswer)
             }
         }
 
